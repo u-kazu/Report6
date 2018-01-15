@@ -12,14 +12,20 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;
 import java.util.Calendar;
 
-
+/*
+SlackBotの機能としては、会話、ミニゲームの主に2つである
+会話は、DIRECT_MESSAGEとメンション、ある言葉に反応するように実装
+ミニゲームは、おみくじとじゃんけんのミニゲームを搭載した。
+ */
 
 @Component // stringのComponentScanで引っ掛ける
 public class SlackBot extends Bot {
 
     private static final Logger logger = LoggerFactory.getLogger(SlackBot.class);
 
-    // botのAPITokenの取得
+    /* botのAPITokenの取得
+    Tokenは第三者に知られたくないのカプセル化の実装が不可欠である
+     */
     @Value("${slackBotToken}")// @valueは、キーがない時のデフォルトの値を設定する。@Value("${キー名:デフォルト値}")
     private String slackToken;
 
@@ -33,12 +39,22 @@ public class SlackBot extends Bot {
         return this;
     }
 
-    // ダイレクトメッセージとダイレクトメッセージが来たらメッセージを返す
+    /* ダイレクトメッセージとダイレクトメッセージが来たらメッセージを返す
+    DIRECT_MENTIONは、メンション(@username)のリプに反応する
+    DIRECT_MESSAGEは、個人のやりとりに反応する
+    onReceiveDMでは、Botが反応するかどうかを確認するための試験的なメソッド
+     */
+
     @Controller(events = {EventType.DIRECT_MENTION, EventType.DIRECT_MESSAGE})
     public void onReceiveDM(WebSocketSession session, Event event) {
         reply(session, event, new Message("こんにちは、私は" + slackService.getCurrentUser().getName() + "だよ!"));
     }
 
+    /*
+    week()は、曜日を返すメソッド
+    7つの配列を作りそれぞれ曜日を入れる
+    Calendar.getInstance();によってカレンダーの取得
+     */
 
     public String week(){
         Calendar now = Calendar.getInstance();
@@ -57,17 +73,23 @@ public class SlackBot extends Bot {
         return d;
     }
 
+    /* コメント 作成者 新城 巧也
+    会話を行うメソッド
+    patternに入力された言葉に反応する。また、nextによって次のメソッドに移る(遷移)
+    startConversationで会話の開始
+    nextConversation(event);によって次のメソッドに移される
+    stopConversation(event);によって会話を止める
+     */
 
-
-    // 会話始めるためのメソッド
-    @Controller( pattern = ("今日のエスカフェ"), next = "confirmTiming")
+    @Controller( pattern = ("今日のエスカフェ"), next = "confirmTiming") // 次の移動先をconfirmTimingに指定
     public void setupMeeting(WebSocketSession session, Event event) {
-        if (week() == "水") {
+        if (week() == "水") { // もし水曜日なら次のメソッドに移り、それ以外の曜日なら会話を終わる
             startConversation(event, "confirmTiming");   // start conversation
-            reply(session, event, new Message("今日も１７時からあるよ！行けますか？"));
+            reply(session, event, new Message("今日も１７時からあるよ！行けますか？")); // メッセージの出力
+            nextConversation(event);
         }else{
             reply(session, event, new Message("今日はSCafeはないよ"));
-            stopConversation(event);
+            stopConversation(event); // stop conversation
         }
     }
 
