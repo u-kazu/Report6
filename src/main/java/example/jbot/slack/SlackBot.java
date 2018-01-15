@@ -62,7 +62,7 @@ public class SlackBot extends Bot {
     // 会話始めるためのメソッド
     @Controller( pattern = ("今日のエスカフェ"), next = "confirmTiming")
     public void setupMeeting(WebSocketSession session, Event event) {
-        if (week() == "月") {
+        if (week() == "水") {
             startConversation(event, "confirmTiming");   // start conversation
             reply(session, event, new Message("今日も１７時からあるよ！行けますか？"));
         }else{
@@ -97,8 +97,8 @@ public class SlackBot extends Bot {
             reply(session, event, new Message("では、時間厳守でよろしくお願いします。"));
             nextConversation(event);
         }else{
-            reply(session, event, new Message("では、何時集合がいいですか？"));
-            nextConversation(event); // stop conversation
+            reply(session, event, new Message("時間の折り合いは各自で決めてください"));
+            stopConversation(event);
         }
     }
 
@@ -106,20 +106,18 @@ public class SlackBot extends Bot {
     public void askSomeone(WebSocketSession session, Event event) {
         if (event.getText().contains("はい")) {
             reply(session, event, new Message("では、運転手になってくれる人、今週もよろしくおねがいします！今日も頑張りましょう！！"));
-        } else if(event.getText().contains("了解")){
+        } else if (event.getText().contains("了解")) {
             reply(session, event, new Message("では、運転手になってくれる人、今週もよろしくおねがいします！今日も頑張りましょう！！"));
-        }else if(event.getText().contains("了解")){
-            reply(session, event, new Message("かしこまりました。“ + event.getText() + “という意見が出ていますが皆さんどうですか？よろしければその時間に集合ということでよろしくお願いします。"));
+            stopConversation(event);    // stop conversation
         }
-        stopConversation(event);    // stop conversation
     }
 
 
     @Controller(pattern = "(おみくじ)")
-    public void omikuji(WebSocketSession session, Event event) { // created by Uehara Kazuma.(e175740)
+    public void omikuji(WebSocketSession session, Event event) { // おみくじを引くメソッド。
         int i ;
         String result;
-        i = (int)(Math.random()*100)+1;
+        i = (int)(Math.random()*100)+1;  // 1~100の乱数を生成。
         System.out.println(i);
         if (i <= 10) {
             result = "大吉";
@@ -135,5 +133,41 @@ public class SlackBot extends Bot {
             result = "大凶";
         }
         reply(session, event, new Message("おみくじの結果は「" + result + "」でした！"));
+    }
+
+
+
+
+    @Controller(pattern = "(彼女欲しい)")
+    public void girlFriend(WebSocketSession session, Event event) { // 適当な会話。
+        reply(session,event, new Message("水35リットル,炭素20kg,アンモニア４リットル,石灰1.5kg,リン800ｇ,塩分250ｇ,硝石100ｇ,硫黄80ｇ,フッ素7.5ｇ,鉄５ｇ,ケイ素３ｇ,その他少量の15の元素,があれば作れるそうですよ。"));
+    }
+
+    @Controller(pattern = "(じゃんけん)", next = "(janken2)")
+    public void janken(WebSocketSession session, Event event) { // chatbotとじゃんけんをするメソッド。
+        reply(session,event,new Message("じゃんけんを始めます。グー、チョキ、パー、のうちどれかを出してください。\nじゃんけん..."));
+        nextConversation(event); // ユーザ入力を受け取るため、次のメソッドへ続く。
+    }
+
+    @Controller
+    public void janken2(WebSocketSession session, Event event) { //じゃんけんメソッドその2
+        int i ;
+        String hand ;
+        i = (int)(Math.random()*3)+1; // 1~3の乱数で手を決める。
+        if (i == 1) {
+            hand = "グー";
+        } else if (i == 2) {
+            hand = "チョキ";
+        } else {
+            hand = "パー";
+        }
+        reply(session,event,new Message("ポン！私の手は「" + hand + "」です。")); // 勝敗判定部分
+        if ((event.getText() == "グー" && hand == "チョキ") || (event.getText() == "チョキ" && hand == "パー") || (event.getText() == "パー" && hand == "グー")) {
+            reply(session,event,new Message("あなたの勝ちです！"));
+        } else if ((event.getText() == "グー" && hand == "パー") || (event.getText() == "チョキ" && hand == "グー") ||(event.getText() == "パー" && hand == "チョキ")) {
+            reply(session,event,new Message("あなたの負けです！"));
+        } else {
+            reply(session,event,new Message("あいこでした。"));
+        }
     }
 }
